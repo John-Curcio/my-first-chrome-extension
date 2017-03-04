@@ -6,6 +6,7 @@
   "browser_action": {
     "default_icon": "dildo-in-header.png"
   },
+  "permissions": ["history"],
   "background": {
     "scripts": ["background.js"]
   },
