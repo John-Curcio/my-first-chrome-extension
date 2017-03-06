@@ -4,7 +4,7 @@
   "description": "This extension shows a Google Image search result for the current page",
   "version": "0.1",
   "browser_action": {
-    "default_icon": "dildo-in-header.png"
+    "default_icon": "triceratops-icon.png"
   },
   "permissions": ["history"],
   "background": {
