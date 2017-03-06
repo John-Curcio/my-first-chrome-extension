@@ -16,26 +16,29 @@ and the webpage - not very limiting after all, then.
 
 
 chrome.runtime.onMessage.addListener(
-  function(request, sender, sendResponse) {
-    console.log(request.message);
-    console.log(request.iconClicks);
-    if( request.message == "clicked_browser_action" ){
-      //Line below uses jQuery to log the URL of the first external link on the page
-      //I'm unfamiliar with jQuery, so best not to meddle with that.
-      var firstHref = $("a[href^='http']").eq(0).attr("href");
-      console.log(firstHref);
-      console.log("Hey just clicked the rainbow dildo");
+    function(request, sender, sendResponse) {
+        console.log(request.didAnything)
+        if( request.message == "clicked_browser_action" ){
+            console.log(request.message);
+            // console.log(request.iconClicks);
+            console.log("about to log history")
+            console.log(request.pageHistory.length)
+            for (i=0; i < request.pageHistory.length; i++) {
+                console.log(request.pageHistory[i]);
+            }
+            console.log("should have logged history")
+            //Line below uses jQuery to log the URL of the first external link on the page
+            //I'm unfamiliar with jQuery, so best not to meddle with that.
+            var firstHref = $("a[href^='http']").eq(0).attr("href");
+            console.log(firstHref);
+            console.log("Hey just clicked the rainbow dildo");
 
-      // Just to confuse you :)
-      if( request.iconClicks % 2 == 0){
-        alert("i eat a nigga ass like almond joy");
-      }
-      // tells background.js what url to open in the new tab.
-      chrome.runtime.sendMessage({"message": "open_new_tab", "url": firstHref});
-
+            // Just to confuse you :)
+            if( request.iconClicks % 2 == 0){
+                alert("i eat a nigga ass like almond joy");
+            }
+            // tells background.js what url to open in the new tab.
+            // chrome.runtime.sendMessage({"message": "open_new_tab", "url": firstHref});
+        };
     }
-    // if( request.pagesSeen % 2 == 0 ) {
-    //   console.log("this is an even page");
-    // }
-  }
 );
