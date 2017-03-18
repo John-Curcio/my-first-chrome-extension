@@ -35,21 +35,21 @@ chrome.runtime.onMessage.addListener(
         };
     }
 );
-
-var foo = function(){
-    console.log("call to foo() in content.js")
-    // return "YEAH";
-    // document.write("YEAH\n");
-    // document.write("what");
-    for(var i = 0; i < 3; i++){
-        $("body").append("<p>this is an appendage<\p>");
-    }
-    // $("p").append("this is an appendage");
-
-    return null;
-};
-
-$(function(){
-    console.log("calling anonymous function");
-    foo();
-})
+// 
+// var foo = function(){
+//     console.log("call to foo() in content.js")
+//     // return "YEAH";
+//     // document.write("YEAH\n");
+//     // document.write("what");
+//     for(var i = 0; i < 3; i++){
+//         $("body").append("<p>this is an appendage<\p>");
+//     }
+//     // $("p").append("this is an appendage");
+//
+//     return null;
+// };
+//
+// $(function(){
+//     console.log("calling anonymous function");
+//     foo();
+// })
