@@ -13,8 +13,6 @@ We get around these limitations by passing messages between the content file
 and the webpage - not very limiting after all, then.
 */
 //alert("i eat a nigga ass like almond joy");
-
-
 chrome.runtime.onMessage.addListener(
     function(request, sender, sendResponse) {
         console.log(request.didAnything)
@@ -42,3 +40,21 @@ chrome.runtime.onMessage.addListener(
         };
     }
 );
+
+var foo = function(){
+    console.log("call to foo() in content.js")
+    // return "YEAH";
+    // document.write("YEAH\n");
+    // document.write("what");
+    for(var i = 0; i < 3; i++){
+        $("body").append("<p>this is an appendage<\p>");
+    }
+    // $("p").append("this is an appendage");
+
+    return null;
+};
+
+$(function(){
+    console.log("calling anonymous function");
+    foo();
+})

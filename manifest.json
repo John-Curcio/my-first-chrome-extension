@@ -6,9 +6,16 @@
   "browser_action": {
     "default_icon": "triceratops-icon.png"
   },
-  "permissions": ["history"],
+  "permissions": [
+    "history",
+    "idle",
+    "tabs"
+    ],  
   "background": {
     "scripts": ["background.js"]
+  },
+  "chrome_url_overrides": {
+    "newtab": "override.html"
   },
   "content_scripts": [
     {
