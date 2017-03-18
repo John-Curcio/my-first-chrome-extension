@@ -1,5 +1,3 @@
-This is my first chrome extension. I'm going to try to turn it into something to boost my productivity.
+A chrome extension that summarizes your browsing habits in a (hopefully) pleasant, easily-digestible format, with handy summary statistics and pleasant graphical visualizations.
 
-Right now I'm just following the following tutorials:
-https://developer.chrome.com/extensions/getstarted
-https://robots.thoughtbot.com/how-to-make-a-chrome-extension
+This is meant to promote mindfulness and prevent internet binges.
