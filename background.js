@@ -9,13 +9,7 @@ Content.js and background.js pass messages between each other.
 var clicks = 0;
 // The following is called when the user clicks on the browser action.
 chrome.browserAction.onClicked.addListener(function(tab) {
-    // create an array of the last 10 webpages visited
-    var pageHistory = [];
-    chrome.history.search({'text': '', "maxResults": 10}, function(historyItems) {
-        historyItems.forEach(function(item){
-            pageHistory.push(item.url);
-        });
-    });
+    console.log("clicked on the rainbow dildo.")
     // Send a message to the active tab
     chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
         clicks++;
@@ -23,8 +17,28 @@ chrome.browserAction.onClicked.addListener(function(tab) {
         // This sends an arbitrary JSON payload to the current tab.
         chrome.tabs.sendMessage(activeTab.id, {
             "message": "clicked_browser_action",
-            "iconClicks": clicks,
-            "pageHistory": pageHistory});
+            "iconClicks": clicks});
+    });
+});
+
+//gets an array of chrome history
+chrome.tabs.onCreated.addListener(function() {
+    console.log("created a new tab. ");
+    var history = [];
+    days = 1;
+    startTime = days * 24 * 60 * 60 * 1000; //{days} days ago.
+    chrome.history.search({'text': '', "startTime": startTime}, function(historyItems) {
+        historyItems.forEach(function(item){
+            history.push(item.url);
+        });
+        // Send a message to the active tab
+        chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+            var activeTab = tabs[0];
+            // This sends an arbitrary JSON payload to the current tab.
+            chrome.tabs.sendMessage(activeTab.id, {
+                "message": "new_tab_created",
+                "history": history});
+        });
     });
 });
 

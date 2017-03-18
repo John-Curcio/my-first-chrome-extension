@@ -12,25 +12,20 @@ and storage. Also, they can't use variables or functions defined by the webpage.
 We get around these limitations by passing messages between the content file
 and the webpage - not very limiting after all, then.
 */
-//alert("i eat a nigga ass like almond joy");
 chrome.runtime.onMessage.addListener(
     function(request, sender, sendResponse) {
-        console.log(request.didAnything)
+        // console.log(request.didAnything)
+        if(request.message == "new_tab_created"){
+            request.history.forEach(function(historyItem){
+                $("body").append("<p>" + historyItem + "<\p>");
+            });
+        };
         if( request.message == "clicked_browser_action" ){
-            console.log(request.message);
-            // console.log(request.iconClicks);
-            console.log("about to log history")
-            console.log(request.pageHistory.length)
-            for (i=0; i < request.pageHistory.length; i++) {
-                console.log(request.pageHistory[i]);
-            }
-            console.log("should have logged history")
             //Line below uses jQuery to log the URL of the first external link on the page
             //I'm unfamiliar with jQuery, so best not to meddle with that.
             var firstHref = $("a[href^='http']").eq(0).attr("href");
             console.log(firstHref);
             console.log("Hey just clicked the rainbow dildo");
-
             // Just to confuse you :)
             if( request.iconClicks % 2 == 0){
                 alert("i eat a nigga ass like almond joy");
