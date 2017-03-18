@@ -25,7 +25,7 @@ chrome.browserAction.onClicked.addListener(function(tab) {
 chrome.tabs.onCreated.addListener(function() {
     console.log("created a new tab. ");
     var history = [];
-    days = 1;
+    days = 10;
     startTime = days * 24 * 60 * 60 * 1000; //{days} days ago.
     chrome.history.search({'text': '', "startTime": startTime}, function(historyItems) {
         historyItems.forEach(function(item){
