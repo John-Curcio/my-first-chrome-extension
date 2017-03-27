@@ -20,11 +20,11 @@ chrome.runtime.onMessage.addListener(
             for(var [domain, visits] of domainFreqs){
                 console.log(visits);
                 $("body").append("<p>" + domain + " : " + String(visits) + "<\p>");
-            };
+            }
             // request.history.forEach(function(historyItem){
             //     $("body").append("<p>" + extractDomain(historyItem) + "<\p>");
             // });
-        };
+        }
         if( request.message == "clicked_browser_action" ){
             //Line below uses jQuery to log the URL of the first external link on the page
             //I'm unfamiliar with jQuery, so best not to meddle with that.
@@ -32,12 +32,12 @@ chrome.runtime.onMessage.addListener(
             console.log(firstHref);
             console.log("Hey just clicked the rainbow dildo");
             // Just to confuse you :)
-            if( request.iconClicks % 2 == 0){
+            if( request.iconClicks % 2 === 0){
                 alert("i eat a nigga ass like almond joy");
-            };
+            }
             // tells background.js what url to open in the new tab.
             // chrome.runtime.sendMessage({"message": "open_new_tab", "url": firstHref});
-        };
+        }
     }
 );
 
@@ -52,7 +52,7 @@ function getDomainFreqs(historyItems){
     var domainFreqs = new Map();
     historyItems.forEach(function(domain){
         if(domainFreqs.has(domain)){
-            domainFreqs.set(domain, domainFreqs.get(domain) + 1)
+            domainFreqs.set(domain, domainFreqs.get(domain) + 1);
         } else {
             domainFreqs.set(domain, 1);
         }
@@ -75,7 +75,7 @@ var extractDomain = function(url) {
     domain = domain.split(':')[0];
 
     return domain;
-}
+};
 //
 // var foo = function(){
 //     console.log("call to foo() in content.js")

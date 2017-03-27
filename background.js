@@ -5,11 +5,22 @@ things like log to the console (peculiar imo).
 Content.js and background.js pass messages between each other.
 */
 
+// initialize Firebase
+var config = {
+    apiKey: "AIzaSyAgiLcOrieofT51GNC8Ue6XKMQRduMbF-4",
+    authDomain: "my-first-chrome-extension.firebaseapp.com",
+    databaseURL: "https://my-first-chrome-extension.firebaseio.com",
+    storageBucket: "my-first-chrome-extension.appspot.com",
+    messagingSenderId: "788900853858"
+};
+firebase.initializeApp(config);
+
+
 // counting # times clicked is just for me to debug - not actually useful
 var clicks = 0;
 // The following is called when the user clicks on the browser action.
 chrome.browserAction.onClicked.addListener(function(tab) {
-    console.log("clicked on the rainbow dildo.")
+    console.log("clicked on the rainbow dildo.");
     // Send a message to the active tab
     chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
         clicks++;
@@ -19,6 +30,15 @@ chrome.browserAction.onClicked.addListener(function(tab) {
             "message": "clicked_browser_action",
             "iconClicks": clicks});
     });
+
+    //TODO tell the firebase database that i just clicked on the rainbow dildo.
+    var ref = firebase.ref("tests");
+    var data = {
+        "test": true,
+        "clicks":clicks
+    };
+    ref.push(data);
+
 });
 
 //gets an array of chrome history
