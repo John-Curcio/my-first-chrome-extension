@@ -14,7 +14,7 @@ and the webpage - not very limiting after all, then.
 */
 chrome.runtime.onMessage.addListener(
     function(request, sender, sendResponse) {
-        // console.log(request.didAnything)
+        console.log("HOORAY");
         if(request.message == "new_tab_created"){
             domainFreqs = getDomainFreqs(request.history);
             for(var [domain, visits] of domainFreqs){

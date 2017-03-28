@@ -4,7 +4,7 @@
   "description": "This extension shows a Google Image search result for the current page",
   "version": "0.1",
   "browser_action": {
-    "default_icon": "dildo-in-header.png"
+      "default_icon": "dildo-in-header.png"
   },
   "permissions": [
     "identity",
@@ -12,8 +12,9 @@
     "idle",
     "tabs"
     ],
+    "content_security_policy":"script-src 'self' https://www.gstatic.com/ https://*.firebaseio.com https://www.googleapis.com; object-src 'self'",
   "background": {
-    "scripts": ["background.js"]
+     "page": "background.html"
   },
   "chrome_url_overrides": {
     "newtab": "override.html"
@@ -25,5 +26,14 @@
       ],
       "js": ["jquery-3.1.1.min.js", "content.js"]
     }
-  ]
+  ],
+  "oauth2": {
+    "client_id": "788900853858-1rd3a9tb41k91tkeq50fdtjkcnguh8ig.apps.googleusercontent.com",
+    "scopes": [
+      "https://www.googleapis.com/auth/userinfo.email",
+      "https://www.googleapis.com/auth/userinfo.profile"
+    ]
+  },
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAioiqwdXpkKOK6/nhXmmhXlk5wJYQJsDWRI/gEkEmMygKGQ9azbVsr6VeijV03UEp8xgYKmxdYR4h7IU5RioJet5EZ3h/4UG1wxjdQHaYGva89Ql2QhEzEAzTqYzbaRlpeFfLtqT7Gs4whr9RfExkBGVn9Ox2AwxqPJlg2+SCIL5SoEyjJFp676EHPfa81oOE7VFvWH0LEBSnPsx9MXJJelfeTzDvEn3t9gBA2WGV8Pd52PubK/4ALJfO0UhbC2HJEwlgefJH4zwO4TLNnr//JMMuRzZ3JyS9Vb7OVo1q8cukubHhyV3y28187xv7m74AGSA+/Oz5zDGXyzxMOOboyQIDAQAB"
+
 }

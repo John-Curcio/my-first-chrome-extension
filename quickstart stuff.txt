@@ -1,0 +1,16 @@
+---item id -----
+nigjmenadocamhimclpbimnkdopcmbbi
+---end item id---
+
+-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAioiqwdXpkKOK6/nhXmmh
+Xlk5wJYQJsDWRI/gEkEmMygKGQ9azbVsr6VeijV03UEp8xgYKmxdYR4h7IU5RioJ
+et5EZ3h/4UG1wxjdQHaYGva89Ql2QhEzEAzTqYzbaRlpeFfLtqT7Gs4whr9RfExk
+BGVn9Ox2AwxqPJlg2+SCIL5SoEyjJFp676EHPfa81oOE7VFvWH0LEBSnPsx9MXJJ
+elfeTzDvEn3t9gBA2WGV8Pd52PubK/4ALJfO0UhbC2HJEwlgefJH4zwO4TLNnr//
+JMMuRzZ3JyS9Vb7OVo1q8cukubHhyV3y28187xv7m74AGSA+/Oz5zDGXyzxMOObo
+yQIDAQAB
+-----END PUBLIC KEY-----
+
+OAuth client ID
+788900853858-1rd3a9tb41k91tkeq50fdtjkcnguh8ig.apps.googleusercontent.com
