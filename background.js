@@ -24,6 +24,7 @@ auth.onAuthStateChanged(function(user){
     if(user){
         console.log("okay, signed in now");
         console.log(user.uid);
+        // logInitialHistory(auth.currentUser.uid, startTime);
     } else {
         console.log("looks like it was signed out");
         auth.signInAnonymously().catch(function(error){
@@ -40,11 +41,12 @@ auth.onAuthStateChanged(function(user){
         days = 10;
         currTime = d.getTime();
         startTime = currTime - days * 24 * 60 * 60 * 1000; //milliseconds since epoch
-        logInitialHistory(auth.currentUser.uid, startTime);
-        firebase.database().ref('users/' + auth.currentUser.uid ).set({
-          "tests": true,
-          "clicks": clicks
-        });
+        // logInitialHistory(auth.currentUser.uid, startTime);
+        console.log("should've logged initial history by now.");
+        // firebase.database().ref('users/' + auth.currentUser.uid ).set({
+        //   "tests": true,
+        //   "clicks": clicks
+        // });
     }
 });
 
@@ -62,13 +64,15 @@ chrome.browserAction.onClicked.addListener(function(tab) {
             "message": "clicked_browser_action",
             "iconClicks": clicks});
     });
-
     //tells the firebase database that i just clicked on the rainbow dildo.
-    firebase.database().ref('users/' + auth.currentUser.uid ).set({
+    firebase.database().ref('users/' + auth.currentUser.uid).push({
       "tests": true,
-      "clicks": clicks
+      "clicks": clicks,
+      "time": Date.now()
     });
-
+    currTime = Date.now();
+    startTime = currTime - 1 * 24 * 60 * 60 * 1000; //{days} days ago.
+    // logInitialHistory(auth.currentUser.uid, startTime);
     //prints to console the current values in tests
 
 });
@@ -88,7 +92,7 @@ chrome.tabs.onCreated.addListener(function() {
             parser.href = item.url;
             daysSinceLastVisit = (currTime - item.lastVisitTime) / (24 * 60 * 60 * 1000);
             history.push([parser.hostname, daysSinceLastVisit]);
-            console.log(parser.hostname, (currTime - item.lastVisitTime) / (24 * 60 * 60 * 1000));
+            // console.log(parser.hostname, (currTime - item.lastVisitTime) / (24 * 60 * 60 * 1000));
         });
         // Send a message to the active tab
         chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
@@ -103,24 +107,25 @@ chrome.tabs.onCreated.addListener(function() {
 
 // uploads the user's browser data since startTime to the database.
 function logInitialHistory(userID, startTime){
-    chrome.history.search({'text': '', "startTime": startTime, "endTime":d.getTime()}, function(historyItems) {
+    firebase.database().ref('users/' + userID).set({
+        "initialHistory":null
+    });
+    chrome.history.search({'text': '', "startTime": startTime, "endTime":Date.now()}, function(historyItems) {
         var parser = null;
         historyItems.forEach(function(item){
             parser = document.createElement('a');
             parser.href = item.url;
-            history.push([parser.hostname, item.lastVisitTime]);
+            firebase.database().ref('users/' + auth.currentUser.uid).push({
+              "hostname": parser.hostname,
+              "lastVisitTime": item.lastVisitTime,
+            });
             console.log(parser.hostname, item.lastVisitTime);
-        });
-        firebase.database().ref('users/' + userID + "/initialHistory").set({
-          "initialHistory": history,
-          "startTime": startTime
         });
     });
     console.log("logged initial history okay");
 }
 
-
-function getHostName(url){
+function getHostName(item){
     var parser = document.createElement('a');
     parser.href = item.url;
     return parser.hostname;
@@ -132,20 +137,23 @@ function log(userID, item){
         time: Date.now()
     });
     //TODO: think of a better name than newTabSesh
-    // var newTabSesh = firebase.database().ref("users/" + userID).push();
-    // newTabSesh.set(data);
     firebase.database().ref("users/" + userID).push(data);
     console.log("finished this one successfully", item);
 }
 
-//////////////////TODO TODO TODO: clean these up a lil///////////////////
-// also just plug full of print statements
+// //////////////////TODO TODO TODO: clean these up a lil///////////////////
+// // also just plug full of print statements
 chrome.tabs.onActivated.addListener(function (activeInfo) {
     chrome.tabs.get(activeInfo.tabId, function(tab) {
         if (tab.status === "complete" && tab.active) {
             chrome.windows.get(tab.windowId, {populate: false}, function(window) {
                 if (window.focused) {
-                    log(auth.currentUser.uiud, getHostName(tab.url));
+                    parser = document.createElement('a');
+                    parser.href = tab.url;
+                    firebase.database().ref('users/' + auth.currentUser.uid).push({
+                      "hostname": parser.hostname,
+                      "visitTime": Date.now()
+                    });
                 }
             });
         }
@@ -156,21 +164,34 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
     if (changeInfo.status === "complete" && tab.active) {
         chrome.windows.get(tab.windowId, {populate: false}, function(window) {
             if (window.focused) {
-                log(auth.currentUser.uiud, getHostName(tab.url));
+                parser = document.createElement('a');
+                parser.href = tab.url;
+                firebase.database().ref('users/' + auth.currentUser.uid).push({
+                  "hostname": parser.hostname,
+                  "visitTime": Date.now()
+                });
             }
         });
     }
 });
-
+//
 chrome.windows.onFocusChanged.addListener(function (windowId) {
     if (windowId == chrome.windows.WINDOW_ID_NONE) {
-        log(null, null);
+        firebase.database().ref('users/' + auth.currentUser.uid).push({
+          "hostname": "WINDOW_ID_NONE",
+          "visitTime": Date.now()
+        });
     } else {
         chrome.windows.get(windowId, {populate: true}, function(window) {
             if (window.focused) {
                 chrome.tabs.query({active: true, windowId: windowId}, function (tabs) {
                     if (tabs[0].status === "complete") {
-                        log(auth.currentUser.uiud, getHostName(tab.url));
+                        parser = document.createElement('a');
+                        parser.href = tabs[0].url; //TODO does this work? i have no idea.
+                        firebase.database().ref('users/' + auth.currentUser.uid).push({
+                          "hostname": parser.hostname,
+                          "visitTime": Date.now()
+                        });
                     }
                 });
             }
