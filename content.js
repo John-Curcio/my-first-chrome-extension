@@ -15,16 +15,13 @@ and the webpage - not very limiting after all, then.
 chrome.runtime.onMessage.addListener(
     function(request, sender, sendResponse) {
         console.log("HOORAY");
-        if(request.message == "new_tab_created"){
-            domainFreqs = getDomainFreqs(request.history);
-            for(var [domain, visits] of domainFreqs){
-                console.log(visits);
-                $("body").append("<p>" + domain + " : " + String(visits) + "<\p>");
-            }
-            // request.history.forEach(function(historyItem){
-            //     $("body").append("<p>" + extractDomain(historyItem) + "<\p>");
-            // });
-        }
+        // if(request.message == "new_tab_created"){
+        //     domainFreqs = getDomainFreqs(request.history);
+        //     for(var [domain, visits] of domainFreqs){
+        //         console.log(visits);
+        //         $("body").append("<p>" + domain + " : " + String(visits) + "<\p>");
+        //     }
+        // }
         if( request.message == "clicked_browser_action" ){
             //Line below uses jQuery to log the URL of the first external link on the page
             //I'm unfamiliar with jQuery, so best not to meddle with that.
@@ -43,11 +40,10 @@ chrome.runtime.onMessage.addListener(
 
 function getDomainFreqs(historyItems){
     domains = [];
-    historyItems.forEach(function(item){
-        domains.push(extractDomain(item));
-    });
+    // historyItems.forEach(function(item){
+    //     domains.push(extractDomain(item));
+    // });
     historyItems = domains;
-    // historyItems.map(extractDomain);
     console.log(historyItems);
     var domainFreqs = new Map();
     historyItems.forEach(function(domain){
@@ -60,37 +56,19 @@ function getDomainFreqs(historyItems){
     return domainFreqs;
 }
 
-//copied from http://stackoverflow.com/questions/8498592/extract-root-domain-name-from-string
-var extractDomain = function(url) {
-    var domain;
-    //find & remove protocol (http, ftp, etc.) and get domain
-    if (url.indexOf("://") > -1) {
-        domain = url.split('/')[2];
+var foo = function(){
+    console.log("call to foo() in content.js");
+    for(var i = 0; i < 3; i++){
+        $("body").append("<p>this is an appendage. It's dynamically-generated, so don't hate.<\p>");
     }
-    else {
-        domain = url.split('/')[0];
-    }
-
-    //find & remove port number
-    domain = domain.split(':')[0];
-
-    return domain;
 };
-//
-// var foo = function(){
-//     console.log("call to foo() in content.js")
-//     // return "YEAH";
-//     // document.write("YEAH\n");
-//     // document.write("what");
-//     for(var i = 0; i < 3; i++){
-//         $("body").append("<p>this is an appendage<\p>");
-//     }
-//     // $("p").append("this is an appendage");
-//
-//     return null;
-// };
-//
-// $(function(){
-//     console.log("calling anonymous function");
-//     foo();
-// })
+
+$(function(){
+    chrome.tabs.getCurrent(function(tab){
+        console.log(tab.url);
+        //this seems weird, but hey, it's simple and works
+        if(tab.url === "chrome://newtab/"){
+            foo();
+        }
+    });
+});
