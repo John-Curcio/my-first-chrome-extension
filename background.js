@@ -60,20 +60,67 @@ chrome.browserAction.onClicked.addListener(function(tab) {
     });
 });
 
+function getVisits(hostname, historyObj){
+    return historyObj[hostname].visits;
+}
+
+function merge(A, B, getValue, getValueArgs){
+    var iters = 0;
+    var C = [];
+    var i = 0;
+    var j = 0;
+    while((i < A.length) || (j < B.length)){
+        if((j == B.length) || (i < A.length &&
+            (getValue(A[i], getValueArgs) <= getValue(B[j], getValueArgs)))){
+            C.push(A[i]);
+            i++;
+        } else {
+            C.push(B[j]);
+            j++;
+        }
+        iters++;
+        if(iters > A.length + B.length){return null;}
+    }
+    return C;
+}
+
+function mergesort(L, getValue, getValueArgs){
+    if(L.length < 2){
+        return L;
+    } else {
+        var mid = Math.floor(L.length / 2);
+        var left = mergesort(L.slice(0, mid), getValue, getValueArgs);
+        var right = mergesort(L.slice(mid, L.length), getValue, getValueArgs);
+        return merge(left, right, getValue, getValueArgs);
+    }
+}
+
 //gets an array of chrome history
-chrome.tabs.onCreated.addListener(function() {
+//TODO: this is a little easier to implement than the overall time.
+function sendSummary(){
     var history = [];
-    var d = new Date();
-    days = 1;
-    currTime = d.getTime();
-    startTime = currTime - days * 24 * 60 * 60 * 1000; //{days} days ago.
-    chrome.history.search({'text': '', "startTime": startTime, "endTime":d.getTime()}, function(historyItems) {
-        var parser = null;
+    days = 7;
+    startTime = Date.now() - days * 24 * 60 * 60 * 1000; //{days} days ago.
+    var searchParams = {'text': '',
+                        "startTime": startTime,
+                        "endTime":Date.now()};
+    chrome.history.search(searchParams, function(historyItems) {
+        var historyObj = {};
         historyItems.forEach(function(item){
-            parser = document.createElement('a');
+            var parser = document.createElement('a');
             parser.href = item.url;
-            daysSinceLastVisit = (currTime - item.lastVisitTime) / (24 * 60 * 60 * 1000);
-            history.push([parser.hostname, daysSinceLastVisit]);
+            // hoursSinceLastVisit = (Date.now() - item.lastVisitTime) / (60 * 60 * 1000);
+            // history.push([parser.hostname, hoursSinceLastVisit]);
+            if(parser.hostname in historyObj){
+                historyObj[parser.hostname].visits.push(item.lastVisitTime);
+                historyObj[parser.hostname].traffic++;
+            } else {
+                historyObj[parser.hostname] = {
+                    "visits": [],
+                    "traffic": 1 //this will simply be the length of visits
+                };
+                historyObj[parser.hostname].visits = [item.lastVisitTime];
+            }
         });
         // Send a message to the active tab
         chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
@@ -81,8 +128,20 @@ chrome.tabs.onCreated.addListener(function() {
             // This sends an arbitrary JSON payload to the current tab.
             chrome.tabs.sendMessage(activeTab.id, {
                 "message": "new_tab_created",
-                "history": history});
+                "history": historyObj});
         });
+    });
+}
+
+//generates the new tab page
+chrome.tabs.onCreated.addListener(function() {
+    console.log("calling chrome.tabls.onCreated Listener");
+    chrome.tabs.getCurrent(function(tab){
+        console.log(tab.url);
+        //this seems weird, but hey, it's simple and works
+        if(tab.url === "chrome://newtab/"){
+            sendSummary();
+        }
     });
 });
 
@@ -95,56 +154,6 @@ function log(item){
       "lastVisitTime": item.lastVisitTime,
     });
     var hostname = parser.hostname;
-    // TODO: V is untested
-    chrome.storage.sync.get(parser.hostname, function (visits) {
-        var i = 0;
-        if(visits){
-            var maxTime = 7 * 24 * 60 * 60 * 1000; //should be 7 days
-            var timeElapsed = Date.now() - visits[i];
-            while(i < visits.length && timeElapsed > maxTime){
-                i++;
-                timeElapsed = Date.now() - visits[i];
-            }
-        } else {
-            visits = [];
-        }
-        var newVisits = visits.slice(i - 1, visits.length);
-        newVisits.push(Date.now());
-        obj = {};
-        obj[parser.hostname] = newVisits;
-        chrome.storage.sync.set(obj, function(){
-            console.log("just logged to chrome storage", obj);
-        });
-
-        //TODO: V is untested.
-        chrome.storage.sync.get("top_sites", function(topSites){
-            if(!topSites){
-                topSites = [];
-            }
-            var topSiteCutoff = 5;
-            if(topSites.length < topSiteCutoff) {
-                obj = {};
-                obj[parser.hostname] = newVisits.length;
-                topSites.push(obj);
-            } else {
-                var minVisits = newVisits.length;
-                var minTopSite = parser.hostname;
-                for(var site in topSites){ //fuck time not visits
-                    if(topSites[site] < newVisits.length){
-                        minVisits = topSites[site];
-                        minTopSite = site;
-                    }
-                }
-                if(minTopSite != parser.hostname){
-                    delete topSites[minTopSite];
-                    topSites[parser.hostname] = newVisits.length;
-                }
-            }
-            chrome.storage.sync.set({"top_sites": topSites}, function(){
-                console.log("just updated topSites", topSites);
-            });
-        });
-    });
 }
 
 // uploads the user's browser data since startTime to the database.
