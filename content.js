@@ -14,7 +14,7 @@ and the webpage - not very limiting after all, then.
 */
 chrome.runtime.onMessage.addListener(
     function(request, sender, sendResponse) {
-        console.log("HOORAY");
+        // console.log("HOORAY");
         // if(request.message == "new_tab_created"){
         //     domainFreqs = getDomainFreqs(request.history);
         //     for(var [domain, visits] of domainFreqs){
@@ -64,6 +64,9 @@ var foo = function(){
 };
 
 $(function(){
+    // TODO: this should simply request a message from background.js
+    // and put this in background.js
+    // except construct page content in background.js
     chrome.tabs.getCurrent(function(tab){
         console.log(tab.url);
         //this seems weird, but hey, it's simple and works

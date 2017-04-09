@@ -94,19 +94,57 @@ function log(item){
       "hostname": parser.hostname,
       "lastVisitTime": item.lastVisitTime,
     });
-    // TODO: log to storage. Pseudocode below
-    // if(item.url in localstorage){
-    //     get half_hour;
-    //     if(half_hour in localstorage[item.url]){
-    //         poo = localstorage[item.url].half_hour;
-    //         set localstorage[item.url].half_hour = poo + 1;
-    //     } else {
-    //         set localstorage[item.url].half_hour = 1;
-    //     }
-    // } else {
-    //     init localstorage[item.url];
-    //     set localstorage[item.url].half_hour = 1;
-    // }
+    var hostname = parser.hostname;
+    // TODO: V is untested
+    chrome.storage.sync.get(parser.hostname, function (visits) {
+        var i = 0;
+        if(visits){
+            var maxTime = 7 * 24 * 60 * 60 * 1000; //should be 7 days
+            var timeElapsed = Date.now() - visits[i];
+            while(i < visits.length && timeElapsed > maxTime){
+                i++;
+                timeElapsed = Date.now() - visits[i];
+            }
+        } else {
+            visits = [];
+        }
+        var newVisits = visits.slice(i - 1, visits.length);
+        newVisits.push(Date.now());
+        obj = {};
+        obj[parser.hostname] = newVisits;
+        chrome.storage.sync.set(obj, function(){
+            console.log("just logged to chrome storage", obj);
+        });
+
+        //TODO: V is untested.
+        chrome.storage.sync.get("top_sites", function(topSites){
+            if(!topSites){
+                topSites = [];
+            }
+            var topSiteCutoff = 5;
+            if(topSites.length < topSiteCutoff) {
+                obj = {};
+                obj[parser.hostname] = newVisits.length;
+                topSites.push(obj);
+            } else {
+                var minVisits = newVisits.length;
+                var minTopSite = parser.hostname;
+                for(var site in topSites){ //fuck time not visits
+                    if(topSites[site] < newVisits.length){
+                        minVisits = topSites[site];
+                        minTopSite = site;
+                    }
+                }
+                if(minTopSite != parser.hostname){
+                    delete topSites[minTopSite];
+                    topSites[parser.hostname] = newVisits.length;
+                }
+            }
+            chrome.storage.sync.set({"top_sites": topSites}, function(){
+                console.log("just updated topSites", topSites);
+            });
+        });
+    });
 }
 
 // uploads the user's browser data since startTime to the database.
