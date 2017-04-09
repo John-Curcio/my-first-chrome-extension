@@ -60,8 +60,8 @@ chrome.browserAction.onClicked.addListener(function(tab) {
     });
 });
 
-function getVisits(hostname, historyObj){
-    return historyObj[hostname].visits;
+function getTraffic(hostname, historyObj){
+    return historyObj[hostname].traffic;
 }
 
 function merge(A, B, getValue, getValueArgs){
@@ -95,11 +95,10 @@ function mergesort(L, getValue, getValueArgs){
     }
 }
 
-//gets an array of chrome history
-//TODO: this is a little easier to implement than the overall time.
-function sendSummary(){
+//TODO: this is lil easier to write than the overall time spent before cutoff.
+function sendSummaryToCurrentTab(){
     var history = [];
-    days = 7;
+    days = 1; //TODO change to 7
     startTime = Date.now() - days * 24 * 60 * 60 * 1000; //{days} days ago.
     var searchParams = {'text': '',
                         "startTime": startTime,
@@ -109,41 +108,69 @@ function sendSummary(){
         historyItems.forEach(function(item){
             var parser = document.createElement('a');
             parser.href = item.url;
-            // hoursSinceLastVisit = (Date.now() - item.lastVisitTime) / (60 * 60 * 1000);
-            // history.push([parser.hostname, hoursSinceLastVisit]);
             if(parser.hostname in historyObj){
                 historyObj[parser.hostname].visits.push(item.lastVisitTime);
                 historyObj[parser.hostname].traffic++;
             } else {
                 historyObj[parser.hostname] = {
                     "visits": [],
-                    "traffic": 1 //this will simply be the length of visits
+                    "traffic": 1
+                    //this will simply be the length of visits
+                    //this can be extended to time, though
                 };
                 historyObj[parser.hostname].visits = [item.lastVisitTime];
             }
         });
+        var hostnamesbytraffic = mergesort(Object.keys(historyObj),
+                                            getTraffic, historyObj);
+        for(var i = 0; i < hostnamesbytraffic.length; i++){
+            console.log(hostnamesbytraffic[i],
+                historyObj[hostnamesbytraffic[i]].traffic);
+        }
         // Send a message to the active tab
         chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
             var activeTab = tabs[0];
             // This sends an arbitrary JSON payload to the current tab.
             chrome.tabs.sendMessage(activeTab.id, {
-                "message": "new_tab_created",
-                "history": historyObj});
+                "message": "newtab_page",
+                "history": historyObj,
+                "hostnamesbytraffic": hostnamesbytraffic
+            });
         });
     });
 }
 
 //generates the new tab page
-chrome.tabs.onCreated.addListener(function() {
-    console.log("calling chrome.tabls.onCreated Listener");
-    chrome.tabs.getCurrent(function(tab){
-        console.log(tab.url);
-        //this seems weird, but hey, it's simple and works
-        if(tab.url === "chrome://newtab/"){
-            sendSummary();
-        }
-    });
+// chrome.tabs.onCreated.addListener(function() {
+//     console.log("calling chrome.tabs.onCreated Listener");
+//     console.log(window.location.href);
+//     chrome.tabs.getCurrent(function(tab){
+//         console.log(tab.url);
+//         //this seems weird, but hey, it's simple and works
+//         if(tab.url === "chrome://newtab/"){
+//             sendSummaryToCurrentTab();
+//         }
+//     });
+// });
+
+chrome.runtime.onMessage.addListener(function(request, sender, senderResponse){
+    console.log(sender.tab ?
+        "from a content script:" + sender.tab.url :
+        "from the extension");
+    if(request.message == "newtab_page" && sender.tab.url == "chrome://newtab/"){
+        sendSummaryToCurrentTab();
+    }
 });
+
+chrome.runtime.onMessage.addListener(
+  function(request, sender, sendResponse) {
+    console.log(sender.tab ?
+                "from a content script:" + sender.tab.url :
+                "from the extension");
+    if (request.greeting == "hello")
+      sendResponse({farewell: "goodbye"});});
+
+
 
 function log(item){
     // logs to the remote database

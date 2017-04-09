@@ -15,13 +15,18 @@ and the webpage - not very limiting after all, then.
 chrome.runtime.onMessage.addListener(
     function(request, sender, sendResponse) {
         // console.log("HOORAY");
-        // if(request.message == "new_tab_created"){
-        //     domainFreqs = getDomainFreqs(request.history);
-        //     for(var [domain, visits] of domainFreqs){
-        //         console.log(visits);
-        //         $("body").append("<p>" + domain + " : " + String(visits) + "<\p>");
-        //     }
-        // }
+        if(request.message == "newtab_page"){
+            console.log("just got a request with newtab_page as message");
+            console.log(request);
+            // domainFreqs = getDomainFreqs(request.history);
+            var n = request.hostnamesbytraffic.length;
+            var hostname = null;
+            for(var i = n-1; i >= 0; i--){
+                hostname = request.hostnamesbytraffic[i];
+                $("body").append("<p>" + hostname + " : " +
+                String(request.history[hostname].traffic) + "<\p>");
+            }
+        }
         if( request.message == "clicked_browser_action" ){
             //Line below uses jQuery to log the URL of the first external link on the page
             //I'm unfamiliar with jQuery, so best not to meddle with that.
@@ -38,40 +43,21 @@ chrome.runtime.onMessage.addListener(
     }
 );
 
-function getDomainFreqs(historyItems){
-    domains = [];
-    // historyItems.forEach(function(item){
-    //     domains.push(extractDomain(item));
-    // });
-    historyItems = domains;
-    console.log(historyItems);
-    var domainFreqs = new Map();
-    historyItems.forEach(function(domain){
-        if(domainFreqs.has(domain)){
-            domainFreqs.set(domain, domainFreqs.get(domain) + 1);
-        } else {
-            domainFreqs.set(domain, 1);
-        }
-    });
-    return domainFreqs;
-}
-
-var foo = function(){
-    console.log("call to foo() in content.js");
-    for(var i = 0; i < 3; i++){
-        $("body").append("<p>this is an appendage. It's dynamically-generated, so don't hate.<\p>");
-    }
-};
-
-$(function(){
-    // TODO: this should simply request a message from background.js
-    // and put this in background.js
-    // except construct page content in background.js
-    chrome.tabs.getCurrent(function(tab){
-        console.log(tab.url);
-        //this seems weird, but hey, it's simple and works
-        if(tab.url === "chrome://newtab/"){
-            foo();
-        }
-    });
-});
+// function getDomainFreqs(historyItems){
+//     domains = [];
+//     // historyItems.forEach(function(item){
+//     //     domains.push(extractDomain(item));
+//     // });
+//     historyItems = domains;
+//     console.log(historyItems);
+//     var domainFreqs = new Map();
+//     historyItems.forEach(function(domain){
+//         if(domainFreqs.has(domain)){
+//             domainFreqs.set(domain, domainFreqs.get(domain) + 1);
+//         } else {
+//             domainFreqs.set(domain, 1);
+//         }
+//     });
+//     return domainFreqs;
+// }
+chrome.runtime.sendMessage({"message": "newtab_page"});
