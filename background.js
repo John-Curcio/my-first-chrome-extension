@@ -62,6 +62,11 @@ chrome.browserAction.onClicked.addListener(function(tab) {
 
 function getTraffic(hostname, historyObj){
     return historyObj[hostname].traffic;
+    // var traffic = 0.0;
+    // for(i = 0; i < historyObj[hostname].length; i++){
+    //     traffic += historyObj[hostname][i];
+    // }
+    // return traffic;
 }
 
 function merge(A, B, getValue, getValueArgs){
@@ -95,38 +100,40 @@ function mergesort(L, getValue, getValueArgs){
     }
 }
 
-//TODO: this is lil easier to write than the overall time spent before cutoff.
+//Note that this is also where unnecessary elements of the queue get deleted.
+//TODO: break it up into bins - what if there's overlap? What if somebody
+//spends 3 hrs on reddit the bin size is 1 hour?
 function sendSummaryToCurrentTab(){
-    var history = [];
-    days = 1; //TODO change to 7
-    startTime = Date.now() - days * 24 * 60 * 60 * 1000; //{days} days ago.
-    var searchParams = {'text': '',
-                        "startTime": startTime,
-                        "endTime":Date.now()};
-    chrome.history.search(searchParams, function(historyItems) {
+    chrome.storage.local.get("queue", function(result){
+        console.log(result.queue);
+        var timeCutOff = 5 * 60 * 1000; //yes, five minutes.
+        var binLength = 30 * 1000; //30 seconds.
         var historyObj = {};
-        historyItems.forEach(function(item){
-            var parser = document.createElement('a');
-            parser.href = item.url;
-            if(parser.hostname in historyObj){
-                historyObj[parser.hostname].visits.push(item.lastVisitTime);
-                historyObj[parser.hostname].traffic++;
+        var newQueue = initQueue();
+        var numBins = Math.floor(timeCutOff / binLength);
+        var queue = result.queue;
+        while(queue.length > 0){
+            var x = queue.remove();
+            if(x.end - Date.now() > timeCutOff){
+                queue = initQueue();
             } else {
-                historyObj[parser.hostname] = {
-                    "visits": [],
-                    "traffic": 1
-                    //this will simply be the length of visits
-                    //this can be extended to time, though
-                };
-                historyObj[parser.hostname].visits = [item.lastVisitTime];
+                newQueue.add(x);
+                if(!(x.hostname in historyObj)){
+                    historyObj[x.hostname] = {
+                        "visitLengths":[],
+                        "traffic":0.0
+                    };
+                }
+                historyObj[x.hostname].visitLengths.push(x.endTime - x.startTime);
+                historyObj[x.hostname].traffic += x.endTime - x.startTime;
             }
+        }
+        chrome.storage.local.set({"queue": newQueue}, function(){
+            // console.log("should have updated the queue successfully in sendSummaryToCurrentTab");
+            console.log(newQueue);
         });
         var hostnamesbytraffic = mergesort(Object.keys(historyObj),
                                             getTraffic, historyObj);
-        for(var i = 0; i < hostnamesbytraffic.length; i++){
-            console.log(hostnamesbytraffic[i],
-                historyObj[hostnamesbytraffic[i]].traffic);
-        }
         // Send a message to the active tab
         chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
             var activeTab = tabs[0];
@@ -137,6 +144,7 @@ function sendSummaryToCurrentTab(){
                 "hostnamesbytraffic": hostnamesbytraffic
             });
         });
+
     });
 }
 
@@ -162,15 +170,32 @@ chrome.runtime.onMessage.addListener(function(request, sender, senderResponse){
     }
 });
 
-chrome.runtime.onMessage.addListener(
-  function(request, sender, sendResponse) {
-    console.log(sender.tab ?
-                "from a content script:" + sender.tab.url :
-                "from the extension");
-    if (request.greeting == "hello")
-      sendResponse({farewell: "goodbye"});});
+// chrome.runtime.onMessage.addListener(
+//   function(request, sender, sendResponse) {
+//     console.log(sender.tab ?
+//                 "from a content script:" + sender.tab.url :
+//                 "from the extension");
+//     if (request.greeting == "hello")
+//       sendResponse({farewell: "goodbye"});});
 
+function logOnlyEndTime(){
+    chrome.storage.local.get("queue", function(result){
+        var x = result.queue.pop();
+        x.end = Date.now();
+        result.queue.add(x);
+    });
+}
 
+function initQueue(){
+    var queue = [];
+    queue.add = queue.push;
+    queue.remove = queue.shift;
+    //peek returns the first item in queue, without modifying queue
+    queue.peek = function(){
+        return queue[0];
+    };
+    return queue;
+}
 
 function log(item){
     // logs to the remote database
@@ -178,9 +203,25 @@ function log(item){
     parser.href = item.url;
     firebase.database().ref('users/' + auth.currentUser.uid).push({
       "hostname": parser.hostname,
-      "lastVisitTime": item.lastVisitTime,
+      "visitTime": Date.now()
     });
     var hostname = parser.hostname;
+    chrome.storage.local.get("queue", function(result){
+        if(!("queue" in result) | !("add" in result.queue)){
+            console.log("key not recognized");
+            result.queue = initQueue();
+        } else {
+            var x = result.queue.pop();
+            x.end = Date.now();
+            result.queue.add(x);
+        }
+        result.queue.add({
+            "hostname": parser.hostname,
+            "start": Date.now()});
+        chrome.storage.local.set({"queue": result.queue}, function(){
+            console.log("should have updated the queue successfully");
+        });
+    });
 }
 
 // uploads the user's browser data since startTime to the database.
@@ -214,12 +255,13 @@ chrome.tabs.onActivated.addListener(function (activeInfo) {
         if (tab.status === "complete" && tab.active) {
             chrome.windows.get(tab.windowId, {populate: false}, function(window) {
                 if (window.focused) {
-                    var parser = document.createElement('a');
-                    parser.href = tab.url;
-                    firebase.database().ref('users/' + auth.currentUser.uid).push({
-                      "hostname": parser.hostname,
-                      "visitTime": Date.now()
-                    });
+                    log(tab);
+                    // var parser = document.createElement('a');
+                    // parser.href = tab.url;
+                    // firebase.database().ref('users/' + auth.currentUser.uid).push({
+                    //   "hostname": parser.hostname,
+                    //   "visitTime": Date.now()
+                    // });
                 }
             });
         }
@@ -230,12 +272,13 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
     if (changeInfo.status === "complete" && tab.active) {
         chrome.windows.get(tab.windowId, {populate: false}, function(window) {
             if (window.focused) {
-                var parser = document.createElement('a');
-                parser.href = tab.url;
-                firebase.database().ref('users/' + auth.currentUser.uid).push({
-                  "hostname": parser.hostname,
-                  "visitTime": Date.now()
-                });
+                log(tab);
+                // var parser = document.createElement('a');
+                // parser.href = tab.url;
+                // firebase.database().ref('users/' + auth.currentUser.uid).push({
+                //   "hostname": parser.hostname,
+                //   "visitTime": Date.now()
+                // });
             }
         });
     }
@@ -252,15 +295,20 @@ chrome.windows.onFocusChanged.addListener(function (windowId) {
             if (window.focused) {
                 chrome.tabs.query({active: true, windowId: windowId}, function (tabs) {
                     if (tabs[0].status === "complete") {
-                        var parser = document.createElement('a');
-                        parser.href = tabs[0].url; //TODO does this work? i have no idea.
-                        firebase.database().ref('users/' + auth.currentUser.uid).push({
-                          "hostname": parser.hostname,
-                          "visitTime": Date.now()
-                        });
+                        log(tabs[0]);
+                        // var parser = document.createElement('a');
+                        // parser.href = tabs[0].url; //TODO does this work? i have no idea.
+                        // firebase.database().ref('users/' + auth.currentUser.uid).push({
+                        //   "hostname": parser.hostname,
+                        //   "visitTime": Date.now()
+                        // });
                     }
                 });
             }
         });
     }
+});
+
+chrome.windows.onRemoved.addListener(function(windowId){
+    logOnlyEndTime();
 });
