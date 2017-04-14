@@ -40,7 +40,6 @@ auth.onAuthStateChanged(function(user){
         currTime = d.getTime();
         startTime = currTime - days * 24 * 60 * 60 * 1000; //milliseconds since epoch
         logInitialHistory(auth.currentUser.uid, startTime);
-        console.log("should've logged initial history by now.");
     }
 });
 
@@ -107,11 +106,10 @@ function sendSummaryToCurrentTab(){
     chrome.storage.local.get("queue", function(result){
         if(!("queue" in result)){
             result.queue = [];
-            chrome.storage.local.set({"queue": result.queue}, function(){
-                console.log("should have updated the queue successfully");
-            });
+            // chrome.storage.local.set({"queue": result.queue}, function(){
+            //     // console.log("should have updated the queue successfully");
+            // });
         }
-        console.log(result);
         var timeCutOff = 5 * 60 * 1000; //yes, five minutes.
         var binLength = 30 * 1000; //30 seconds.
         var historyObj = {};
@@ -119,32 +117,28 @@ function sendSummaryToCurrentTab(){
         var numBins = Math.floor(timeCutOff / binLength);
         while(result.queue.length > 0){
             var x = result.queue.shift();
-            if(x.end - Date.now() > timeCutOff){
+            if(Date.now() - x.end > timeCutOff){
+                console.log("okay result.queue is just [] now");
                 result.queue = [];
             } else {
                 newQueue.push(x);
-                if(!(x.hostname in historyObj)){
+                if(!(x.hostname in historyObj) || !("visits" in historyObj[x.hostname])){
                     historyObj[x.hostname] = {
-                        "visitLengths":[],
+                        "visits":[],
                         "traffic":0
                     };
                 }
-                console.log(x.hostname);
-                console.log(x.end);
-                console.log(x.start);
-                console.log(x.end - x.start);
-                historyObj[x.hostname].visitLengths.push(x.end - x.start);
+                historyObj[x.hostname].visits.push({
+                    "end": x.end,
+                    "start": x.start});
                 historyObj[x.hostname].traffic += x.end - x.start;
             }
         }
         chrome.storage.local.set({"queue": newQueue}, function(){
             // console.log("should have updated the queue successfully in sendSummaryToCurrentTab");
-            console.log(newQueue);
         });
-        console.log(historyObj);
         var hostnamesbytraffic = mergesort(Object.keys(historyObj),
                                             getTraffic, historyObj);
-        console.log(historyObj);
         // Send a message to the active tab
         chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
             var activeTab = tabs[0];
@@ -159,23 +153,10 @@ function sendSummaryToCurrentTab(){
     });
 }
 
-//generates the new tab page
-// chrome.tabs.onCreated.addListener(function() {
-//     console.log("calling chrome.tabs.onCreated Listener");
-//     console.log(window.location.href);
-//     chrome.tabs.getCurrent(function(tab){
-//         console.log(tab.url);
-//         //this seems weird, but hey, it's simple and works
-//         if(tab.url === "chrome://newtab/"){
-//             sendSummaryToCurrentTab();
-//         }
-//     });
-// });
-
 chrome.runtime.onMessage.addListener(function(request, sender, senderResponse){
-    console.log(sender.tab ?
-        "from a content script:" + sender.tab.url :
-        "from the extension");
+    // console.log(sender.tab ?
+    //     "from a content script:" + sender.tab.url :
+    //     "from the extension");
     if(request.message == "newtab_page" && sender.tab.url == "chrome://newtab/"){
         sendSummaryToCurrentTab();
     }
@@ -194,6 +175,9 @@ function logOnlyEndTime(){
         var x = result.queue.pop();
         x.end = Date.now();
         result.queue.add(x);
+        chrome.storage.local.set({"queue": result.queue}, function(){
+            console.log("logged only end time");
+        });
     });
 }
 
@@ -220,13 +204,14 @@ function log(item){
     chrome.storage.local.get("queue", function(result){
         if(!result.queue){
             console.log(result);
-            console.log(result.queue);
             console.log("key not recognized");
             result.queue = [];
         } else {
             var x = result.queue.pop();
-            x.end = Date.now();
-            result.queue.push(x);
+            if(x){
+                x.end = Date.now();
+                result.queue.push(x);
+            }
         }
         if(parser.hostname != "newtab"){
             result.queue.push({
@@ -234,7 +219,7 @@ function log(item){
                 "start": Date.now()});
         }
         chrome.storage.local.set({"queue": result.queue}, function(){
-            console.log("should have updated the queue successfully");
+            // console.log("should have updated the queue successfully");
         });
     });
 }
@@ -253,10 +238,8 @@ function logInitialHistory(userID, startTime){
               "hostname": parser.hostname,
               "lastVisitTime": item.lastVisitTime,
             });
-            console.log(parser.hostname, item.lastVisitTime);
         });
     });
-    console.log("logged initial history okay");
 }
 
 function getHostName(item){
@@ -288,12 +271,6 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
         chrome.windows.get(tab.windowId, {populate: false}, function(window) {
             if (window.focused) {
                 log(tab);
-                // var parser = document.createElement('a');
-                // parser.href = tab.url;
-                // firebase.database().ref('users/' + auth.currentUser.uid).push({
-                //   "hostname": parser.hostname,
-                //   "visitTime": Date.now()
-                // });
             }
         });
     }

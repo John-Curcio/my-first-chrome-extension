@@ -13,72 +13,113 @@ We get around these limitations by passing messages between the content file
 and the webpage - not very limiting after all, then.
 */
 
-function getDiscretizedTrafficList(hostname, hostnameObj, increment){
-    var n = Math.floor((Date.now() - hostnameObj.startTime) / increment);
-    console.log(n);
-    if(n > 100){return null;}
-    var visits = [];
-    for(var j = 0; j < n; j++){visits.push(0);}
-    var visitEpoch = new Date("1/1/1601 0:00:00");
-    var d = new Date();
-    hostnameObj.visits.forEach(function(visit){
-        var b = new Date(visit);
-        var c = new Date(Date.now() - visitEpoch);
-        var timeDiff = -Number(d.getTime()) - Number(visit) - Number(visitEpoch);
-        var i = Math.floor(timeDiff / increment);
-        // visit = visit.getTime() + visitEpoch.getTime();
-        // console.log(visit);
-        // var i = Math.floor((Date.now() - visit)/increment);
-        // var i = Math.floor((new Date() - visit + visitEpoch) / increment);
-        // var p = new Date(new Date() - visit + visitEpoch);
-        // console.log(new Date(), visit, visitEpoch, p.getDate(), i);
-        console.log(c, timeDiff, i);
-        if(i >= n){
-            console.log("very bad at incrementing.");
-            return null;
-        }
-        visits[i]++;
+// function getDiscretizedTrafficList(hostname, hostnameObj, increment){
+//     var n = Math.floor((Date.now() - hostnameObj.start) / increment);
+//     console.log(n);
+//     if(n > 100){return null;}
+//     var visits = [];
+//     for(var j = 0; j < n; j++){visits.push(0);}
+//     var visitEpoch = new Date("1/1/1601 0:00:00");
+//     var d = new Date();
+//     hostnameObj.visits.forEach(function(visit){
+//         var b = new Date(visit);
+//         var c = new Date(Date.now() - visitEpoch);
+//         var timeDiff = -Number(d.getTime()) - Number(visit) - Number(visitEpoch);
+//         var i = Math.floor(timeDiff / increment);
+//         // visit = visit.getTime() + visitEpoch.getTime();
+//         // console.log(visit);
+//         // var i = Math.floor((Date.now() - visit)/increment);
+//         // var i = Math.floor((new Date() - visit + visitEpoch) / increment);
+//         // var p = new Date(new Date() - visit + visitEpoch);
+//         // console.log(new Date(), visit, visitEpoch, p.getDate(), i);
+//         console.log(c, timeDiff, i);
+//         if(i >= n){
+//             console.log("very bad at incrementing.");
+//             return null;
+//         }
+//         visits[i]++;
+//     });
+//     // console.log(hostnameObj.visits);
+//     return visits;
+// }
+
+// //TODO: color is just total number of requests, not proportion of time spent.
+// function getHeatRect(count){
+//     var maxDark = 240;
+//     count = 2*count;
+//     if(count > 255 + maxDark){count = 255+maxDark;}
+//     var rgb = "rgb(" + String(maxDark) + "," +
+//                 String(maxDark - count) + "," +
+//                 String(maxDark) + ")";
+//     return "<svg width='20' height='20'><rect width='20' height='20' " +
+//     "style='fill:" + rgb + ";stroke-width:3;stroke:rgb(0,0,0)' /></svg>";
+//     // return "<rect class='increment' fill=rgb(" +
+//     // count + maxDark + ")></rect>";
+// }
+
+// function getHeatMap(visits){
+//     var rectRow = "";
+//     visits.forEach(function(visit){
+//         rectRow += getHeatRect(visit);
+//     });
+//     return rectRow;
+// }
+function getHtmlHeatMap(rectList){
+    var html = "";
+    rectList.forEach(function(rect){
+        var rgb = "rgb(" + String(240) + "," +
+                        String(Math.floor(rect*240)) + "," +
+                        String(240) + ")";
+        html += "<svg width='20' height='20'><rect width='20' height='20' " +
+                "style='fill:" +
+                rgb +
+                ";stroke-width:3;stroke:rgb(0,0,0)' /></svg>";
     });
-    // console.log(hostnameObj.visits);
-    return visits;
+    return html;
 }
 
-//TODO: color is just total number of requests, not proportion of time spent.
-function getHeatRect(count){
-    var maxDark = 240;
-    count = 2*count;
-    if(count > 255 + maxDark){count = 255+maxDark;}
-    var rgb = "rgb(" + String(maxDark) + "," +
-                String(maxDark - count) + "," +
-                String(maxDark) + ")";
-    return "<svg width='20' height='20'><rect width='20' height='20' " +
-    "style='fill:" + rgb + ";stroke-width:3;stroke:rgb(0,0,0)' /></svg>";
-    // return "<rect class='increment' fill=rgb(" +
-    // count + maxDark + ")></rect>";
-}
-
-function getHeatMap(visits){
-    var rectRow = "";
+function getHeatMap(visits, increment){
+    var timeCutOff = 5 * 60 * 1000; //5 minutes
+    var n = Math.floor(timeCutOff / increment);
+    var rectList = new Array(n);
+    for(i = 0; i < n; i++){
+        rectList[i] = 0.0;
+    }
     visits.forEach(function(visit){
-        rectRow += getHeatRect(visit);
+        while(visit.end > visit.start){
+            if((Date.now() - visit.start) <= timeCutOff){
+                var i = Math.floor((Date.now() - visit.start)/increment);
+                console.log((Date.now() - visit.start)/increment);
+                console.log(i);
+                if(i < n){
+                    var p = (visit.end - visit.start)/increment;
+                    // var p = ((Date.now() - visit.start) % increment)/increment;
+                    rectList[i] += p;
+                    if(rectList[i] > 1.0){
+                        rectList[i] = 1.0;
+                    }
+                }
+            }
+            visit.start += increment;
+        }
     });
-    return rectRow;
+    return getHtmlHeatMap(rectList);
 }
+
 
 chrome.runtime.onMessage.addListener(
     function(request, sender, sendResponse) {
         // console.log("HOORAY");
-        if(request.message == "newtab_page"){
+        if(request.message == "newtab_page" && ("hostnamesbytraffic" in request)){
             var n = request.hostnamesbytraffic.length;
-            var increment = 24 * 60 * 60 * 1000; //1 day
+            var increment = 60 * 1000; //1 minute
             var hostname = null;
             for(var i = n-1; i >= 0; i--){
                 hostname = request.hostnamesbytraffic[i];
                 if(request.history[hostname].traffic){
                     $("body").append("<p>" + hostname + " : " +
-                    String(request.history[hostname].traffic) +
+                    getHeatMap(request.history[hostname].visits, increment) +
                     "<\p>");
-                    console.log(request.history[hostname]);
                 }
                 // $("body").append("<p>" + hostname + " : " +
                 // getHeatMap(getDiscretizedTrafficList(hostname,
