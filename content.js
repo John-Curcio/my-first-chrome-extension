@@ -74,9 +74,12 @@ chrome.runtime.onMessage.addListener(
             var hostname = null;
             for(var i = n-1; i >= 0; i--){
                 hostname = request.hostnamesbytraffic[i];
-                $("body").append("<p>" + hostname + " : " +
-                String(request.history[hostname].traffic) +
-                "<\p>");
+                if(request.history[hostname].traffic){
+                    $("body").append("<p>" + hostname + " : " +
+                    String(request.history[hostname].traffic) +
+                    "<\p>");
+                    console.log(request.history[hostname]);
+                }
                 // $("body").append("<p>" + hostname + " : " +
                 // getHeatMap(getDiscretizedTrafficList(hostname,
                 //     request.history[hostname], increment)) +

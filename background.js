@@ -105,35 +105,46 @@ function mergesort(L, getValue, getValueArgs){
 //spends 3 hrs on reddit the bin size is 1 hour?
 function sendSummaryToCurrentTab(){
     chrome.storage.local.get("queue", function(result){
-        console.log(result.queue);
+        if(!("queue" in result)){
+            result.queue = [];
+            chrome.storage.local.set({"queue": result.queue}, function(){
+                console.log("should have updated the queue successfully");
+            });
+        }
+        console.log(result);
         var timeCutOff = 5 * 60 * 1000; //yes, five minutes.
         var binLength = 30 * 1000; //30 seconds.
         var historyObj = {};
-        var newQueue = initQueue();
+        var newQueue = [];
         var numBins = Math.floor(timeCutOff / binLength);
-        var queue = result.queue;
-        while(queue.length > 0){
-            var x = queue.remove();
+        while(result.queue.length > 0){
+            var x = result.queue.shift();
             if(x.end - Date.now() > timeCutOff){
-                queue = initQueue();
+                result.queue = [];
             } else {
-                newQueue.add(x);
+                newQueue.push(x);
                 if(!(x.hostname in historyObj)){
                     historyObj[x.hostname] = {
                         "visitLengths":[],
-                        "traffic":0.0
+                        "traffic":0
                     };
                 }
-                historyObj[x.hostname].visitLengths.push(x.endTime - x.startTime);
-                historyObj[x.hostname].traffic += x.endTime - x.startTime;
+                console.log(x.hostname);
+                console.log(x.end);
+                console.log(x.start);
+                console.log(x.end - x.start);
+                historyObj[x.hostname].visitLengths.push(x.end - x.start);
+                historyObj[x.hostname].traffic += x.end - x.start;
             }
         }
         chrome.storage.local.set({"queue": newQueue}, function(){
             // console.log("should have updated the queue successfully in sendSummaryToCurrentTab");
             console.log(newQueue);
         });
+        console.log(historyObj);
         var hostnamesbytraffic = mergesort(Object.keys(historyObj),
                                             getTraffic, historyObj);
+        console.log(historyObj);
         // Send a message to the active tab
         chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
             var activeTab = tabs[0];
@@ -207,17 +218,21 @@ function log(item){
     });
     var hostname = parser.hostname;
     chrome.storage.local.get("queue", function(result){
-        if(!("queue" in result) | !("add" in result.queue)){
+        if(!result.queue){
+            console.log(result);
+            console.log(result.queue);
             console.log("key not recognized");
-            result.queue = initQueue();
+            result.queue = [];
         } else {
             var x = result.queue.pop();
             x.end = Date.now();
-            result.queue.add(x);
+            result.queue.push(x);
         }
-        result.queue.add({
-            "hostname": parser.hostname,
-            "start": Date.now()});
+        if(parser.hostname != "newtab"){
+            result.queue.push({
+                "hostname": parser.hostname,
+                "start": Date.now()});
+        }
         chrome.storage.local.set({"queue": result.queue}, function(){
             console.log("should have updated the queue successfully");
         });
