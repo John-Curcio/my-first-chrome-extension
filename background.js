@@ -110,11 +110,9 @@ function sendSummaryToCurrentTab(){
             //     // console.log("should have updated the queue successfully");
             // });
         }
-        var timeCutOff = 5 * 60 * 1000; //yes, five minutes.
-        var binLength = 30 * 1000; //30 seconds.
+        var timeCutOff = 12 * 60 * 60 * 1000; //yes, five minutes.
         var historyObj = {};
         var newQueue = [];
-        var numBins = Math.floor(timeCutOff / binLength);
         while(result.queue.length > 0){
             var x = result.queue.shift();
             if(Date.now() - x.end > timeCutOff){
