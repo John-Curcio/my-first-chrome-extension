@@ -1,4 +1,4 @@
-#The Procrastination Habitation Application
+# The Procrastination Habitation Application
 
 A growing body of research suggests that humble mindfulness techniques can be extremely effective at helping [smokers quit](http://www.npr.org/2016/06/24/483123383/can-mindfulness-help-you-quit-smoking) and [treating depression](https://www.theguardian.com/science/blog/2015/apr/21/could-mindfulness-therapy-be-an-alternative-to-antidepressants).
 
